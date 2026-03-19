@@ -250,7 +250,7 @@ async function generateSummaryCanvas(allData, insights, closingNote) {
 
       // Slider badge
       if(sliderVal!==null&&realDraw){
-        const btxt=sliderVal+'/5  '+SLIDER_LBL[s];
+        const btxt=sliderVal+'/10  '+SLIDER_LBL[s];
         ctx.font='bold 13px Arial,sans-serif';
         const bw=ctx.measureText(btxt).width+24;
         ctx.fillStyle=C.yellow; rr(ctx,W-PAD-INNER-bw,cy+4,bw,24,12); ctx.fill();
@@ -378,17 +378,17 @@ function TagSelector({options,selected=[],onChange,max}){
 function SliderInput({value=3,onChange}){
   const labels=["נמוך מאוד","נמוך","בינוני","גבוה","גבוה מאוד"];
   // Invert so slider goes right→low, left→high (RTL convention)
-  const internal=6-value;
+  const internal=11-value;
   return(
     <div>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
         <span style={{color:C.muted,fontSize:11,fontFamily:FONT}}>{labels[0]}</span>
-        <span style={{color:C.yellow,fontWeight:700,fontSize:16,fontFamily:FONT}}>{value}/5</span>
+        <span style={{color:C.yellow,fontWeight:700,fontSize:16,fontFamily:FONT}}>{value}/10</span>
         <span style={{color:C.muted,fontSize:11,fontFamily:FONT}}>{labels[4]}</span>
       </div>
-      <input type="range" min="1" max="5" value={internal}
-        onChange={e=>onChange(6-Number(e.target.value))}/>
-      <div style={{textAlign:"center",marginTop:4,color:C.muted,fontSize:12,fontFamily:FONT}}>{labels[value-1]}</div>
+      <input type="range" min="1" max="10" value={internal}
+        onChange={e=>onChange(11-Number(e.target.value))}/>
+      <div style={{textAlign:"center",marginTop:4,color:C.muted,fontSize:12,fontFamily:FONT}}>{labels[Math.floor((value-1)/2)]}</div>
     </div>
   );
 }
@@ -647,7 +647,7 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
         })}
         {sliderVal!==null&&(
           <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:8,marginTop:8}}>
-            <div style={{background:C.yellow,color:C.dark,padding:"3px 12px",borderRadius:20,fontWeight:700,fontSize:13,fontFamily:FONT}}>{sliderVal}/5</div>
+            <div style={{background:C.yellow,color:C.dark,padding:"3px 12px",borderRadius:20,fontWeight:700,fontSize:13,fontFamily:FONT}}>{sliderVal}/10</div>
             <span style={{color:C.muted,fontSize:12,fontFamily:FONT}}>{SLDR_LBL[s]}</span>
           </div>
         )}
@@ -810,7 +810,7 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
 // =====================
 // MAIN APP
 // =====================
-const defaultData=()=>({1:{photo:undefined,impact:3},2:{photo:undefined,pressure:3},3:{photo:undefined,worry:3},4:{photo:undefined,belief:3}});
+const defaultData=()=>({1:{photo:undefined,impact:5},2:{photo:undefined,pressure:5},3:{photo:undefined,worry:5},4:{photo:undefined,belief:5}});
 
 function App(){
   const [page,setPage]=useState("loading");
