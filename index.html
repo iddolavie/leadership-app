@@ -566,8 +566,8 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
     });
     if(insights){lines.push("תובנות אישיות:");lines.push(insights);lines.push("");}
     if(closingNote){lines.push("הערה אישית:");lines.push(closingNote);lines.push("");}
-    lines.push("לצפייה בסיכום המלא:");
-    lines.push(shareUrl);
+    lines.push("לצפייה באפליקציה:");
+    lines.push(APP_URL);
     return lines.join("\n");
   };
   const mailUrl="mailto:?subject="+encodeURIComponent("מנהיגות פועלת – סיכום התהליך")+"&body="+encodeURIComponent(buildEmailBody());
