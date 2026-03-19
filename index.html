@@ -377,6 +377,8 @@ function TagSelector({options,selected=[],onChange,max}){
 
 function SliderInput({value=3,onChange}){
   const labels=["נמוך מאוד","נמוך","בינוני","גבוה","גבוה מאוד"];
+  // Invert so slider goes right→low, left→high (RTL convention)
+  const internal=6-value;
   return(
     <div>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
@@ -384,8 +386,8 @@ function SliderInput({value=3,onChange}){
         <span style={{color:C.yellow,fontWeight:700,fontSize:16,fontFamily:FONT}}>{value}/5</span>
         <span style={{color:C.muted,fontSize:11,fontFamily:FONT}}>{labels[4]}</span>
       </div>
-      <input type="range" min="1" max="5" value={value}
-        onChange={e=>onChange(Number(e.target.value))} style={{transform:"scaleX(-1)"}}/>
+      <input type="range" min="1" max="5" value={internal}
+        onChange={e=>onChange(6-Number(e.target.value))}/>
       <div style={{textAlign:"center",marginTop:4,color:C.muted,fontSize:12,fontFamily:FONT}}>{labels[value-1]}</div>
     </div>
   );
