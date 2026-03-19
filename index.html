@@ -848,6 +848,15 @@ function App(){
 
   useEffect(()=>{
     (async()=>{
+      if(window.location.search.includes("test=1")){
+        const demo={
+          1:{photo:0,challenge:"האתגר המרכזי שלי הוא ניהול צוות גדול תחת לחץ",current:"אני מתמודד עם חוסר בהירות ביעדים",skills:["תקשורת","הקשבה"],missing:"זמן וכלים מתאימים",impact:7},
+          2:{photo:5,focus:"להיות נוכח ומחובר לצוות",firstAction:"פגישת צוות שבועית מובנית",skills:["בהירות ניהולית","מוטיבציה"],pressure:6},
+          3:{photo:10,hidden:"הצוות מרגיש חוסר ביטחון",fear:"שלא אצליח לייצר שינוי אמיתי",barrier:"חוסר אמון בין חברי הצוות",worry:5},
+          4:{photo:15,challenge:"ארגון מחדש של הפגישות השבועיות",teamIdeal:"צוות עצמאי שיוזם ופועל",goal:"להגיע למצב של עצמאות ניהולית",tomorrow:"שיחה אחד על אחד עם כל חבר צוות",belief:8}
+        };
+        setStepData(demo);setInsights("הצוות צריך כיוון ברור וביטחון");setPage("summary");return;
+      }
       const jm=window.location.search.match(/[?&]j=([^&]+)/);
       if(jm){
         const d=await loadFromJsonBlob(jm[1]);
