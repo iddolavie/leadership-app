@@ -520,7 +520,26 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
     const code=encodeState(allData,insights,closingNote);
     return code?APP_URL+"#d="+code:APP_URL;
   })();
-  const mailUrl="mailto:?subject="+encodeURIComponent("מנהיגות פועלת – סיכום התהליך")+"&body="+encodeURIComponent(shareUrl);
+  const buildEmailBody=()=>{
+    const lines=["שלום,","","סיכום התהליך שלי ממנהיגות פועלת:",""];
+    [1,2,3,4].forEach(s=>{
+      const d=allData[s]||{};
+      lines.push("── שלב "+s+": "+STEPS_CONFIG[s-1].title+" ──");
+      STEP_QUESTIONS[s].filter(q=>q.type!=='slider').forEach(q=>{
+        const val=d[q.key];
+        if(!val||(Array.isArray(val)&&val.length===0))return;
+        lines.push(q.label);
+        lines.push(Array.isArray(val)?val.join(", "):val);
+        lines.push("");
+      });
+    });
+    if(insights){lines.push("תובנות אישיות:");lines.push(insights);lines.push("");}
+    if(closingNote){lines.push("הערה אישית:");lines.push(closingNote);lines.push("");}
+    lines.push("לצפייה בסיכום המלא:");
+    lines.push(shareUrl);
+    return lines.join("\n");
+  };
+  const mailUrl="mailto:?subject="+encodeURIComponent("מנהיגות פועלת – סיכום התהליך")+"&body="+encodeURIComponent(buildEmailBody());
 
   const openShare=()=>setShareModal(true);
 
