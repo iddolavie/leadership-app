@@ -57,6 +57,7 @@ window.PHOTOS = [
 window.APP_URL = "https://iddolavie.github.io/leadership-in-action/";
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -306,22 +307,40 @@ function encodeState(stepData,insights,closingNote){
     const p={s:stepData};
     if(insights)p.i=insights;
     if(closingNote)p.c=closingNote;
-    const bytes=new TextEncoder().encode(JSON.stringify(p));
-    let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b));
-    return btoa(bin);
+    return LZString.compressToEncodedURIComponent(JSON.stringify(p));
   }catch{return null;}
 }
 function decodeState(){
   try{
     const sm=window.location.search.match(/[?&]d=([^&]+)/);
     const hm=window.location.hash.match(/^#d=(.+)/);
-    const enc=sm?sm[1]:(hm?hm[1]:null);
+    const enc=sm?decodeURIComponent(sm[1]):(hm?hm[1]:null);
     if(!enc)return null;
-    const bin=atob(enc);
-    const bytes=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
-    return JSON.parse(new TextDecoder().decode(bytes));
+    const json=LZString.decompressFromEncodedURIComponent(enc);
+    return JSON.parse(json);
   }catch{return null;}
+}
+async function saveToJsonBlob(data){
+  try{
+    const res=await fetch('https://jsonblob.com/api/jsonBlob',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(data),
+      signal:AbortSignal.timeout(6000)
+    });
+    if(res.ok){const loc=res.headers.get('Location');if(loc)return loc.split('/').pop();}
+  }catch(e){}
+  return null;
+}
+async function loadFromJsonBlob(id){
+  try{
+    const res=await fetch('https://jsonblob.com/api/jsonBlob/'+id,{
+      headers:{'Accept':'application/json'},
+      signal:AbortSignal.timeout(6000)
+    });
+    if(res.ok)return await res.json();
+  }catch(e){}
+  return null;
 }
 
 // =====================
@@ -554,38 +573,22 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
   const SLDR_LBL={1:"מד השפעה",2:"מד לחץ",3:"מד חשש",4:"מד אמונה"};
   const [copyMsg,setCopyMsg]=useState("");
   const [shareModal,setShareModal]=useState(false);
-  const [shortening,setShortening]=useState(false);
+  const [shareLoading,setShareLoading]=useState(false);
 
-  const shortenUrl=async(longUrl)=>{
-    // Try cleanuri (POST - no URL length limit, CORS supported)
-    try{
-      const r=await fetch("https://cleanuri.com/api/v1/shorten",{
-        method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:"url="+encodeURIComponent(longUrl),signal:AbortSignal.timeout(6000)});
-      const d=await r.json();
-      if(d.result_url)return d.result_url;
-    }catch(e){}
-    // Try is.gd POST fallback
-    try{
-      const r=await fetch("https://is.gd/create.php",{
-        method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:"format=simple&url="+encodeURIComponent(longUrl),signal:AbortSignal.timeout(5000)});
-      const s=await r.text();
-      if(s&&s.startsWith("http")&&s.length<60)return s.trim();
-    }catch(e){}
-    return longUrl;
-  };
-
-  const shareUrl=(()=>{
+  const getShareUrl=async()=>{
+    const payload={s:allData};
+    if(insights)payload.i=insights;
+    if(closingNote)payload.c=closingNote;
+    const id=await saveToJsonBlob(payload);
+    if(id)return APP_URL+"?j="+id;
     const code=encodeState(allData,insights,closingNote);
     return code?APP_URL+"?d="+code:APP_URL;
-  })();
+  };
   const sendEmail=async()=>{
-    setShortening(true);
-    const short=await shortenUrl(shareUrl);
-    setShortening(false);
-    const body="סיכום תהליך מנהיגות פועלת שלי – 4 שלבים של התפתחות מנהיגותית\n\n"+short;
-    window.open("mailto:?subject="+encodeURIComponent("מנהיגות פועלת – סיכום")+"&body="+encodeURIComponent(body),"_blank");
+    setShareModal(false);setShareLoading(true);
+    const url=await getShareUrl();
+    setShareLoading(false);
+    window.open("mailto:?subject="+encodeURIComponent("מנהיגות פועלת – סיכום")+"&body="+encodeURIComponent(url),"_blank");
   };
 
   const openShare=()=>setShareModal(true);
@@ -611,22 +614,25 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
   };
 
   const sendWhatsApp=async()=>{
-    setShortening(true);
-    const short=await shortenUrl(shareUrl);
-    setShortening(false);
-    const text="סיכום תהליך מנהיגות פועלת שלי – 4 שלבים של התפתחות מנהיגותית\n\n"+short;
+    setShareModal(false);setShareLoading(true);
+    const url=await getShareUrl();
+    setShareLoading(false);
+    const text="סיכום תהליך מנהיגות פועלת שלי – 4 שלבים של התפתחות מנהיגותית\n\n"+url;
     window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
   };
 
-  const copyLink=()=>{
+  const copyLink=async()=>{
+    setShareModal(false);setShareLoading(true);
+    const url=await getShareUrl();
+    setShareLoading(false);
     const tryOld=()=>{
-      const el=document.createElement("textarea");el.value=shareUrl;
+      const el=document.createElement("textarea");el.value=url;
       el.style.position="fixed";el.style.opacity="0";
       document.body.appendChild(el);el.focus();el.select();
       document.execCommand("copy");document.body.removeChild(el);
-      setShareModal(false);setCopyMsg("✓ הקישור הועתק!");setTimeout(()=>setCopyMsg(""),3000);
+      setCopyMsg("✓ הקישור הועתק!");setTimeout(()=>setCopyMsg(""),3000);
     };
-    if(navigator.clipboard) navigator.clipboard.writeText(shareUrl).then(()=>{setShareModal(false);setCopyMsg("✓ הקישור הועתק!");setTimeout(()=>setCopyMsg(""),3000);}).catch(tryOld);
+    if(navigator.clipboard) navigator.clipboard.writeText(url).then(()=>{setCopyMsg("✓ הקישור הועתק!");setTimeout(()=>setCopyMsg(""),3000);}).catch(tryOld);
     else tryOld();
   };
 
@@ -676,16 +682,17 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
   return(
     <div style={{minHeight:"100vh",background:C.bg,padding:"44px 20px 28px",direction:"rtl",fontFamily:FONT}}>
 
-      {/* Share Modal */}
-      {shortening&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",
-          alignItems:"center",justifyContent:"center",zIndex:2000}}>
-          <div style={{background:"#2B2D2F",borderRadius:14,padding:"24px 32px",textAlign:"center",fontFamily:FONT}}>
-            <div style={{color:C.white,fontSize:16,marginBottom:8}}>⏳ מייצר קישור...</div>
-            <div style={{color:C.muted,fontSize:13}}>רגע אחד</div>
+      {/* Loading overlay */}
+      {shareLoading&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000}}>
+          <div style={{color:"#fff",fontSize:18,fontFamily:FONT,textAlign:"center"}}>
+            <div style={{marginBottom:10}}>⏳</div>
+            <div>מייצר קישור...</div>
           </div>
         </div>
       )}
+
+      {/* Share Modal */}
       {shareModal&&(
         <div onClick={()=>setShareModal(false)} style={{
           position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",
@@ -699,7 +706,7 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
                 borderRadius:8,padding:"6px 14px",fontFamily:FONT}}>✕ סגור</button>
               <span style={{color:C.white,fontWeight:700,fontSize:17,fontFamily:FONT}}>שתף סיכום</span>
             </div>
-            <button style={btnR} onClick={async()=>{setShareModal(false);await sendWhatsApp();}}>
+            <button style={btnR} onClick={()=>{sendWhatsApp();}}>
               <div style={iBox("#25D366")}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
@@ -710,7 +717,7 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
                 <div style={{fontWeight:700,fontSize:15}}>WhatsApp</div>
               </div>
             </button>
-            <button style={btnR} onClick={async()=>{setShareModal(false);await sendEmail();}}>
+            <button style={btnR} onClick={()=>{sendEmail();}}>
               <div style={iBox("#4A6FA5")}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -840,9 +847,16 @@ function App(){
   const [closingNote,setClosingNote]=useState("");
 
   useEffect(()=>{
-    const decoded=decodeState();
-    if(decoded&&decoded.s){setStepData(decoded.s);if(decoded.i)setInsights(decoded.i);if(decoded.c)setClosingNote(decoded.c);setPage("summary");}
-    else setPage("home");
+    (async()=>{
+      const jm=window.location.search.match(/[?&]j=([^&]+)/);
+      if(jm){
+        const d=await loadFromJsonBlob(jm[1]);
+        if(d&&d.s){setStepData(d.s);if(d.i)setInsights(d.i);if(d.c)setClosingNote(d.c);setPage("summary");return;}
+      }
+      const decoded=decodeState();
+      if(decoded&&decoded.s){setStepData(decoded.s);if(decoded.i)setInsights(decoded.i);if(decoded.c)setClosingNote(decoded.c);setPage("summary");}
+      else setPage("home");
+    })();
   },[]);
 
   useEffect(()=>{if(page!=="loading")window.scrollTo({top:0,behavior:"smooth"});},[page]);
