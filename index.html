@@ -306,13 +306,21 @@ function encodeState(stepData,insights,closingNote){
     const p={s:stepData};
     if(insights)p.i=insights;
     if(closingNote)p.c=closingNote;
-    return btoa(encodeURIComponent(JSON.stringify(p)));
+    const bytes=new TextEncoder().encode(JSON.stringify(p));
+    let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b));
+    return btoa(bin);
   }catch{return null;}
 }
-function decodeState(hash){
+function decodeState(){
   try{
-    if(!hash.startsWith('#d='))return null;
-    return JSON.parse(decodeURIComponent(atob(hash.slice(3))));
+    const sm=window.location.search.match(/[?&]d=([^&]+)/);
+    const hm=window.location.hash.match(/^#d=(.+)/);
+    const enc=sm?sm[1]:(hm?hm[1]:null);
+    if(!enc)return null;
+    const bin=atob(enc);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder().decode(bytes));
   }catch{return null;}
 }
 
@@ -549,18 +557,28 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
   const [shortening,setShortening]=useState(false);
 
   const shortenUrl=async(longUrl)=>{
+    // Try cleanuri (POST - no URL length limit, CORS supported)
     try{
-      const r=await fetch("https://is.gd/create.php?format=simple&url="+encodeURIComponent(longUrl),
-        {signal:AbortSignal.timeout(5000)});
+      const r=await fetch("https://cleanuri.com/api/v1/shorten",{
+        method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:"url="+encodeURIComponent(longUrl),signal:AbortSignal.timeout(6000)});
+      const d=await r.json();
+      if(d.result_url)return d.result_url;
+    }catch(e){}
+    // Try is.gd POST fallback
+    try{
+      const r=await fetch("https://is.gd/create.php",{
+        method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:"format=simple&url="+encodeURIComponent(longUrl),signal:AbortSignal.timeout(5000)});
       const s=await r.text();
-      if(s&&s.startsWith("http")&&!s.includes("error"))return s.trim();
+      if(s&&s.startsWith("http")&&s.length<60)return s.trim();
     }catch(e){}
     return longUrl;
   };
 
   const shareUrl=(()=>{
     const code=encodeState(allData,insights,closingNote);
-    return code?APP_URL+"#d="+code:APP_URL;
+    return code?APP_URL+"?d="+code:APP_URL;
   })();
   const sendEmail=async()=>{
     setShortening(true);
@@ -822,7 +840,7 @@ function App(){
   const [closingNote,setClosingNote]=useState("");
 
   useEffect(()=>{
-    const decoded=decodeState(window.location.hash);
+    const decoded=decodeState();
     if(decoded&&decoded.s){setStepData(decoded.s);if(decoded.i)setInsights(decoded.i);if(decoded.c)setClosingNote(decoded.c);setPage("summary");}
     else setPage("home");
   },[]);
@@ -836,7 +854,7 @@ function App(){
   if(page==="summary")return(
     <SummaryPage allData={stepData} insights={insights} setInsights={setInsights}
       closingNote={closingNote} setClosingNote={setClosingNote}
-      onRestart={()=>{setStepData(defaultData());setInsights("");setClosingNote("");window.location.hash="";setPage("home");}}/>
+      onRestart={()=>{setStepData(defaultData());setInsights("");setClosingNote("");window.history.replaceState(null,"",window.location.pathname);setPage("home");}}/>
   );
   return(
     <StepPage stepNum={page} data={stepData[page]} setData={d=>updateStep(page,d)}
