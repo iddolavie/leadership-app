@@ -688,18 +688,25 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
               <span style={{color:C.white,fontWeight:700,fontSize:17,fontFamily:FONT}}>שתף סיכום</span>
             </div>
             <button style={btnR} onClick={()=>doShare()}>
-              <div style={iBox("#C0392B")}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                  <line x1="16" y1="13" x2="8" y2="13"/>
-                  <line x1="16" y1="17" x2="8" y2="17"/>
-                  <polyline points="10 9 9 9 8 9"/>
+              <div style={iBox("#25D366")}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.554 4.122 1.524 5.855L.057 23.5l5.797-1.52A11.935 11.935 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.374l-.36-.214-3.724.977.993-3.63-.234-.373A9.77 9.77 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
                 </svg>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontWeight:700,fontSize:15}}>שמור / שתף PDF</div>
-                <div style={{fontSize:12,color:C.muted,marginTop:2}}>מובייל: שתף ישירות • דסקטופ: שמור קובץ</div>
+                <div style={{fontWeight:700,fontSize:15}}>WhatsApp</div>
+              </div>
+            </button>
+            <button style={btnR} onClick={()=>doShare()}>
+              <div style={iBox("#4A6FA5")}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontWeight:700,fontSize:15}}>מייל</div>
               </div>
             </button>
             <button style={btnR} onClick={copyLink}>
