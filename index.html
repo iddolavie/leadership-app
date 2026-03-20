@@ -58,6 +58,7 @@ window.APP_URL = "https://iddolavie.github.io/leadership-in-action/";
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -580,21 +581,30 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
   const [shareModal,setShareModal]=useState(false);
   const [shareLoading,setShareLoading]=useState(false);
 
-  const getShareUrl=async()=>{
-    const payload={s:allData};
-    if(insights)payload.i=insights;
-    if(closingNote)payload.c=closingNote;
-    const id=await saveToGist(payload);
-    if(id)return APP_URL+"?j="+id;
-    const code=encodeState(allData,insights,closingNote);
-    return code?APP_URL+"?d="+code:APP_URL;
+  const captureImage=async()=>{
+    const el=document.getElementById('capture-area');
+    if(!el||typeof html2canvas==='undefined')return null;
+    const canvas=await html2canvas(el,{backgroundColor:'#1A1C1E',scale:2,useCORS:true,logging:false});
+    return new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.92));
   };
-  const sendEmail=async()=>{
+  const doShare=async(via)=>{
     setShareModal(false);setShareLoading(true);
-    const url=await getShareUrl();
+    try{
+      const blob=await captureImage();
+      if(!blob)throw new Error('no image');
+      const file=new File([blob],'מנהיגות-פועלת-סיכום.jpg',{type:'image/jpeg'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:'מנהיגות פועלת – סיכום התהליך'});
+      } else {
+        const objUrl=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=objUrl;a.download='מנהיגות-פועלת-סיכום.jpg';a.click();
+        URL.revokeObjectURL(objUrl);
+        if(via==='email') setTimeout(()=>window.open('mailto:?subject='+encodeURIComponent('מנהיגות פועלת – סיכום'),'_blank'),400);
+      }
+    }catch(e){}
     setShareLoading(false);
-    window.open("mailto:?subject="+encodeURIComponent("מנהיגות פועלת – סיכום")+"&body="+encodeURIComponent(url),"_blank");
   };
+  const sendEmail=async()=>doShare('email');
 
   const openShare=()=>setShareModal(true);
 
@@ -618,17 +628,13 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
     downloadImg();
   };
 
-  const sendWhatsApp=async()=>{
-    setShareModal(false);setShareLoading(true);
-    const url=await getShareUrl();
-    setShareLoading(false);
-    const text="סיכום תהליך מנהיגות פועלת שלי – 4 שלבים של התפתחות מנהיגותית\n\n"+url;
-    window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
-  };
+  const sendWhatsApp=async()=>doShare('whatsapp');
 
   const copyLink=async()=>{
     setShareModal(false);setShareLoading(true);
-    const url=await getShareUrl();
+    const payload={s:allData};if(insights)payload.i=insights;if(closingNote)payload.c=closingNote;
+    const id=await saveToGist(payload);
+    const url=id?APP_URL+"?j="+id:(()=>{const code=encodeState(allData,insights,closingNote);return code?APP_URL+"?d="+code:APP_URL;})();
     setShareLoading(false);
     const tryOld=()=>{
       const el=document.createElement("textarea");el.value=url;
@@ -692,7 +698,7 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000}}>
           <div style={{color:"#fff",fontSize:18,fontFamily:FONT,textAlign:"center"}}>
             <div style={{marginBottom:10}}>⏳</div>
-            <div>מייצר קישור...</div>
+            <div>מייצר תמונה...</div>
           </div>
         </div>
       )}
@@ -749,6 +755,7 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
       )}
 
       <div style={{maxWidth:500,margin:"0 auto"}}>
+        <div id="capture-area" style={{background:C.bg,padding:"10px 0 4px",direction:"rtl"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
           <div style={{fontSize:50,marginBottom:10}}>🎯</div>
           <h1 style={{color:C.yellow,fontSize:28,fontWeight:700,margin:"0 0 6px",fontFamily:FONT}}>סיכום התהליך שלך</h1>
@@ -770,6 +777,7 @@ function SummaryPage({allData,insights,setInsights,closingNote,setClosingNote,on
             </div>
           )}
         </div>
+        </div>{/* end capture-area */}
 
         <div style={{marginTop:14}}>
           <div style={{background:C.bgCard,borderRadius:14,padding:20,marginBottom:14}}>
