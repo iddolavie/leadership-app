@@ -337,8 +337,10 @@ async function saveToGist(data){
       signal:ctrl.signal
     });
     clearTimeout(t);
+    console.log('saveSession status:',res.status);
     if(res.ok)return id;
-  }catch(e){}
+    const err=await res.text();console.error('saveSession error:',err);
+  }catch(e){console.error('saveSession exception:',e);}
   return null;
 }
 async function loadFromGist(id){
